@@ -3,8 +3,11 @@ Database setup and seed data
 """
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from models import Base, Exercise
+from models import Base, Exercise, User
+from passlib.context import CryptContext
 import os
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./liftlog.db")
 
@@ -95,8 +98,21 @@ def init_db():
         db.add(Exercise(**ex))
     
     db.commit()
-    db.close()
     print(f"Seeded {len(exercises)} exercises")
+    
+    # Seed default user
+    if not db.query(User).filter(User.username == "kevin").first():
+        default_user = User(
+            username="kevin",
+            email="kevin@liftlog.app",
+            hashed_password=pwd_context.hash("lift123"),
+            display_name="Kevin"
+        )
+        db.add(default_user)
+        db.commit()
+        print("Created default user: kevin / lift123")
+    
+    db.close()
 
 
 if __name__ == "__main__":
